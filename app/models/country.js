@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const countrySchema = new mongoose.Schema({
   image: {
     type: String,
-    required: true,
-    default: '/public/defult/picture.png'
+    default: null // Handled by controller with Cloudinary default
   },
   name: {
     type: String,
@@ -36,8 +35,9 @@ const countrySchema = new mongoose.Schema({
     required: true,
     uppercase: true
   },
-  publicId: {
-    type: String
+  imagePublicId: {
+    type: String,
+    default: null // Store Cloudinary public_id
   },
   isDomestic: {
     type: Boolean,

@@ -10,22 +10,14 @@ const dotenv = require("dotenv").config();
 // Database connection
 const connectDB = require('./config/dbconfig');
 const seedDefaultIndiaCountry = require('./app/helpers/insertIndia');
-
-connectDB().then(() => seedDefaultIndiaCountry());
+const { insertDefaultAdmin } = require('./app/helpers/insertAdmin')
 
 const app = express();
 const port = process.env.PORT || 5151;
 
 app.set('trust proxy', 1);
 
-// const allowedOrigins = [
-//   "http://localhost:4040",
-//   "https://counsel-frontend-4mh3.vercel.app/",
-//   "http://127.0.0.1:5503",
-// ];
-
 app.use(cors({
-  // origin: allowedOrigins,
   origin: "*",
   credentials: true
 }));
@@ -98,7 +90,24 @@ app.use('/certificates', require('./app/routes/certificateRoutes'));
 app.use('/coupons', require('./app/routes/couponCodeRouter'));
 app.use('/packages', require('./app/routes/packageRouter'));
 
-// Server start
-app.listen(port, () => {
-  console.log(`🚀 Server is running on port ${port}`);
-});
+// // Server start
+// app.listen(port, () => {
+//   console.log(`🚀 Server is running on port ${port}`);
+// });
+
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    await seedDefaultIndiaCountry();
+    await insertDefaultAdmin();
+    app.listen(port, () => {
+      console.log(`🚀 Server is running on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();

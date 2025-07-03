@@ -20,7 +20,7 @@ router.put('/update', requireSignInCandidate, isCandidate, upload, candidateCont
 router.delete('/:id', requireSignInCandidate, isAdmin, candidateController.delete);
 router.put('/block/:id', requireSignInCandidate, isAdmin, candidateController.block);
 router.put('/reactivate/:id', requireSignInCandidate, isAdmin, candidateController.reactivate);
-router.get('/', requireSignInCandidate, isAdmin, candidateController.getAll);
+router.get('/', candidateController.getAll);
 router.get('/:id', requireSignInCandidate, isAdmin, candidateController.getById);
 
 module.exports = router;

@@ -1,110 +1,103 @@
 const Job = require('../models/job');
 const generateJobId = require('../utils/jobIdGenerator');
 
-const validateSkills = (skills) => {
-  if (!Array.isArray(skills)) return false;
-  if (skills.length > 10) return false;
-  return skills.every(skill => typeof skill === 'string' && skill.trim().length > 0 && skill.length <= 50);
-};
-
+// Create a new job
 exports.createJob = async (req, res) => {
   try {
-    const { skills, certificate } = req.body;
-    if (skills && !validateSkills(skills)) {
-      return res.status(400).json({ error: 'Skills must be an array of non-empty strings, max 10, each up to 50 characters' });
-    }
-    if (!certificate) {
-      return res.status(400).json({ error: 'Certificate is required' });
-    }
-    const jobId = await generateJobId();
-    const job = new Job({
+    const jobId = await generateJobId(); // Use the jobIdGenerator
+    const jobData = {
       ...req.body,
       jobId,
-      skills: skills ? skills.map(skill => skill.trim().toLowerCase()) : [],
-    });
+      postedBy: req.user ? req.user._id : null, // Assuming user is attached to req
+    };
+    
+    const job = new Job(jobData);
     await job.save();
-    const populatedJob = await Job.findById(job._id).populate('country').populate('certificate').populate('postedBy');
-    const count = await Job.countDocuments();
-    res.status(201).json({
-      message: 'Job created successfully',
-      count,
-      data: populatedJob,
-    });
+    res.status(201).json({ message: 'Job created successfully', job });
   } catch (error) {
-    res.status(400).json({ error: error.message || 'Failed to create job' });
+    res.status(400).json({ message: 'Error creating job', error: error.message });
   }
 };
 
-exports.getAllJobs = async (req, res) => {
-  try {
-    const jobs = await Job.find()
-      .populate('country')
-      .populate('certificate')
-      .sort({ createdAt: -1 });
-    const count = await Job.countDocuments();
-    res.status(200).json({
-      count,
-      message: 'Jobs fetched successfully',
-      data: jobs,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message || 'Failed to fetch jobs' });
-  }
-};
-
-exports.getJobById = async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id).populate('country').populate('certificate').populate('postedBy');
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    res.status(200).json({
-      message: 'Job fetched successfully',
-      data: job,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message || 'Failed to fetch job' });
-  }
-};
-
+// Update a job by jobId
 exports.updateJob = async (req, res) => {
   try {
-    const { skills, certificate } = req.body;
-    if (skills && !validateSkills(skills)) {
-      return res.status(400).json({ error: 'Skills must be an array of non-empty strings, max 10, each up to 50 characters' });
+    const { jobId } = req.params;
+    const job = await Job.findOneAndUpdate(
+      { jobId },
+      { ...req.body, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+    
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
     }
-    if (certificate === '') {
-      return res.status(400).json({ error: 'Certificate is required' });
-    }
-    const updateData = {
-      ...req.body,
-      skills: skills ? skills.map(skill => skill.trim().toLowerCase()) : undefined,
-    };
-    const updatedJob = await Job.findByIdAndUpdate(req.params.id, updateData, { new: true })
+    
+    res.status(200).json({ message: 'Job updated successfully', job });
+  } catch (error) {
+    res.status(400).json({ message: 'Error updating job', error: error.message });
+  }
+};
+
+// Get all jobs
+exports.getAllJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ isActive: true })
       .populate('country')
       .populate('certificate')
-      .populate('postedBy');
-    if (!updatedJob) return res.status(404).json({ message: 'Job not found' });
-    res.status(200).json({ message: 'Job updated successfully', data: updatedJob });
+      .populate('postedBy', 'username email')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ message: 'Jobs retrieved successfully', jobs });
   } catch (error) {
-    res.status(400).json({ error: error.message || 'Failed to update job' });
+    res.status(500).json({ message: 'Error retrieving jobs', error: error.message });
   }
 };
 
+// Get job by jobId
+exports.getJobById = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const job = await Job.findOne({ jobId })
+      .populate('country')
+      .populate('certificate')
+      .populate('postedBy', 'username email');
+    
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+    
+    res.status(200).json({ message: 'Job retrieved successfully', job });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving job', error: error.message });
+  }
+};
+
+// Delete a job by jobId
 exports.deleteJob = async (req, res) => {
   try {
-    const job = await Job.findByIdAndDelete(req.params.id);
-    if (!job) return res.status(404).json({ message: 'Job not found' });
-    const count = await Job.countDocuments();
-    res.status(200).json({ message: 'Job deleted permanently', count });
+    const { jobId } = req.params;
+    const job = await Job.findOneAndUpdate(
+      { jobId },
+      { isActive: false, updatedAt: Date.now() },
+      { new: true }
+    );
+    
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+    
+    res.status(200).json({ message: 'Job deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message || 'Failed to delete job' });
+    res.status(500).json({ message: 'Error deleting job', error: error.message });
   }
 };
 
-exports.getJobCount = async (req, res) => {
+// Get jobs count
+exports.getJobsCount = async (req, res) => {
   try {
-    const count = await Job.countDocuments();
-    res.status(200).json({ message: 'Job count fetched successfully', count });
+    const count = await Job.countDocuments({ isActive: true });
+    res.status(200).json({ message: 'Jobs count retrieved successfully', count });
   } catch (error) {
-    res.status(500).json({ error: error.message || 'Failed to fetch job count' });
+    res.status(500).json({ message: 'Error retrieving jobs count', error: error.message });
   }
 };

@@ -9,7 +9,21 @@ const candidateController = {
   // Register Candidate
   async register(req, res) {
     try {
-      const { email, mobile, password, firstName, lastName, dob } = req.body;
+      const {
+        email,
+        mobile,
+        password,
+        firstName,
+        lastName,
+        dob,
+        addressLine1,
+        addressLine2,
+        city,
+        district,
+        state,
+        zipCode,
+        country
+      } = req.body;
       const image = req.file;
 
       // Validation
@@ -81,7 +95,17 @@ const candidateController = {
         lastName,
         dob,
         image: imageUrl,
+
+        // New Address Fields
+        addressLine1,
+        addressLine2,
+        city,
+        district,
+        state,
+        zipCode,
+        country, // should be a valid ObjectId
       });
+
 
       // Send welcome email with the generated password
       await sendWelcomeCandidateEmail(email, `${firstName} ${lastName}`, `${finalPassword}`);
@@ -315,10 +339,41 @@ const candidateController = {
 
   async update(req, res) {
     try {
-      const { canId, email, mobile, firstName, lastName, gender, dob, country, address } = req.body;
+      const {
+        canId,
+        email,
+        mobile,
+        firstName,
+        lastName,
+        gender,
+        dob,
+        addressLine1,
+        addressLine2,
+        city,
+        district,
+        state,
+        zipCode,
+        country
+      } = req.body;
       const image = req.file;
 
-      const updateData = { canId, email, mobile, firstName, lastName, gender, dob, country, address };
+      const updateData = {
+        canId,
+        email,
+        mobile,
+        firstName,
+        lastName,
+        gender,
+        dob,
+        addressLine1,
+        addressLine2,
+        city,
+        district,
+        state,
+        zipCode,
+        country
+      };
+
       if (image) {
         const result = await cloudinary.uploader.upload(image.path, {
           folder: 'candidates',
