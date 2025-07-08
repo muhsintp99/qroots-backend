@@ -13,7 +13,7 @@ const seedDefaultIndiaCountry = require('./app/helpers/insertIndia');
 const { insertDefaultAdmin } = require('./app/helpers/insertAdmin')
 
 const app = express();
-const port = process.env.PORT || 5151;
+const port = process.env.PORT || 2022;
 
 app.set('trust proxy', 1);
 
