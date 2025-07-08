@@ -1,5 +1,5 @@
 // certificate.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const certificateSchema = new mongoose.Schema({
   title: {
@@ -34,5 +34,6 @@ const certificateSchema = new mongoose.Schema({
   },
 });
 
-certificateSchema.index({createdAt: -1})
-export default mongoose.model('Certificate', certificateSchema);
+certificateSchema.index({ createdAt: -1 });
+
+module.exports = mongoose.model('Certificate', certificateSchema);
