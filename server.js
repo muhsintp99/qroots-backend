@@ -73,7 +73,7 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/users', require('./app/routes/userRouter'));
-app.use('/candidate', require('./app/routes/candidateRouter'));
+app.use('/candidates', require('./app/routes/candidateRouter'));
 
 app.use('/blog', require('./app/routes/blogRouter'));
 app.use('/jobs', require('./app/routes/jobRouter'));

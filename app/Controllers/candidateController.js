@@ -231,7 +231,7 @@ const candidateController = {
       }
 
       // Verify OTP and expiry
-      if (candidate.resetPasswordToken !== otp || candidate.resetPasswordExpires < new Date()) {
+      if (candidate.resetPasswordToken !== otp || !candidate.resetPasswordExpires || candidate.resetPasswordExpires < new Date()) {
         return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
       }
 

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const candidateController = require('../Controllers/candidateController');
 const { createUpload } = require('../middlewares/cloudinaryUpload');
-const { requireSignInCandidate, isCandidate, isAdmin } = require('../middlewares/authMiddleware');
+const { requireSignInCandidate, isCandidate, isAdmin, requireSignIn } = require('../middlewares/authMiddleware');
 
 const upload = createUpload('candidates');
 
@@ -20,7 +20,7 @@ router.put('/update', requireSignInCandidate, isCandidate, upload, candidateCont
 router.delete('/:id', requireSignInCandidate, isAdmin, candidateController.delete);
 router.put('/block/:id', requireSignInCandidate, isAdmin, candidateController.block);
 router.put('/reactivate/:id', requireSignInCandidate, isAdmin, candidateController.reactivate);
-router.get('/', candidateController.getAll);
+router.get('/',candidateController.getAll);
 router.get('/:id', requireSignInCandidate, isAdmin, candidateController.getById);
 
 module.exports = router;
