@@ -1,90 +1,52 @@
+const fs = require('fs');
+const path = require('path');
 const College = require('../models/college');
 
-// Helper function to safely parse JSON
-const safeParseJSON = (value, defaultValue = []) => {
-  if (!value) return defaultValue;
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch (err) {
-      console.error(`JSON parse error for value: ${value}`, err);
-      return defaultValue;
-    }
+const safeParseJSON = (value, fallback = []) => {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
   }
-  // If value is already an array, return it as is
-  if (Array.isArray(value)) return value;
-  return defaultValue;
 };
 
-// Create a new college
+// CREATE
 exports.createCollege = async (req, res) => {
   try {
     const {
       name, code, email, phone, address, website, desc, map,
-      category, status, facilities, services, country, courses,
-      visible, createdBy
+      category, status, facilities, services, country, courses, visible
     } = req.body;
 
-    // const image = req.file ? `/public/college/${req.file.filename}` : null;
-    const image = req.file ? req.file.path : null;
+    const image = req.file
+      ? `${req.protocol}://${req.get('host')}/public/college/${req.file.filename}`
+      : null;
 
-
-    // Check if college code already exists
-    const existingCollege = await College.findOne({ code, isDeleted: false });
-    if (existingCollege) {
-      return res.status(400).json({ error: 'College code already exists' });
-    }
+    const exists = await College.findOne({ code });
+    if (exists) return res.status(400).json({ error: 'College code already exists' });
 
     const newCollege = new College({
-      name,
-      code,
-      email,
-      phone,
-      address,
-      website,
-      desc,
-      map,
-      category,
-      status,
+      name, code, email, phone, address, website, desc, map,
+      category, status, country,
       facilities: safeParseJSON(facilities),
       services: safeParseJSON(services),
       courses: safeParseJSON(courses),
-      country,
       image,
-      visible: visible !== undefined ? (typeof visible === 'string' ? JSON.parse(visible) : visible) : true,
-      createdBy: createdBy || 'admin',
-      updatedBy: createdBy || 'admin'
+      visible: visible !== undefined ? JSON.parse(visible) : true
     });
 
     const saved = await newCollege.save();
-
-    // Populate the saved college before returning
-    const populatedCollege = await College.findById(saved._id)
-      .populate({
-        path: 'country',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      })
-      .populate({
-        path: 'courses',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      });
-
-    res.status(201).json(populatedCollege);
+    res.status(201).json(saved);
   } catch (err) {
-    console.error('Create college error:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get all colleges
+// READ ALL
 exports.getColleges = async (req, res) => {
   try {
     const { page = 1, limit = 10, search, category, status, country } = req.query;
-
-    // Build filter object
-    const filter = { isDeleted: false };
+    const filter = {};
 
     if (search) {
       filter.$or = [
@@ -99,16 +61,8 @@ exports.getColleges = async (req, res) => {
     if (country) filter.country = country;
 
     const colleges = await College.find(filter)
-      .populate({
-        path: 'country',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      })
-      .populate({
-        path: 'courses',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      })
+      .populate('country')
+      .populate('courses')
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .sort({ createdAt: -1 });
@@ -118,155 +72,88 @@ exports.getColleges = async (req, res) => {
     res.json({
       colleges,
       totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      currentPage: Number(page),
       total
     });
   } catch (err) {
-    console.error('Get colleges error:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get single college
+// READ SINGLE
 exports.getCollegeById = async (req, res) => {
   try {
-    const college = await College.findOne({ _id: req.params.id, isDeleted: false })
-      .populate({
-        path: 'country',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      })
-      .populate({
-        path: 'courses',
-        match: { isDeleted: false },
-        select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-      });
+    const college = await College.findById(req.params.id)
+      .populate('country')
+      .populate('courses');
 
-    if (!college) {
-      return res.status(404).json({ error: 'College not found' });
-    }
-
+    if (!college) return res.status(404).json({ error: 'College not found' });
     res.json(college);
   } catch (err) {
-    console.error('Get college by ID error:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update college
+// UPDATE
 exports.updateCollege = async (req, res) => {
   try {
     const {
       name, code, email, phone, address, website, desc, map,
-      category, status, facilities, services, country, courses,
-      visible, updatedBy
+      category, status, facilities, services, country, courses, visible
     } = req.body;
 
-    // const image = req.file ? `/public/college/${req.file.filename}` : undefined;
-    const image = req.file ? req.file.path : undefined;
+    const college = await College.findById(req.params.id);
+    if (!college) return res.status(404).json({ error: 'College not found' });
 
-
-    // Check if college code already exists (excluding current college)
-    if (code) {
-      const existingCollege = await College.findOne({
-        code,
-        isDeleted: false,
-        _id: { $ne: req.params.id }
-      });
-      if (existingCollege) {
-        return res.status(400).json({ error: 'College code already exists' });
-      }
+    if (req.file && college.image) {
+      const oldImagePath = path.join(__dirname, `../../public/college/${path.basename(college.image)}`);
+      if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
     }
+
+    const image = req.file
+      ? `${req.protocol}://${req.get('host')}/public/college/${req.file.filename}`
+      : college.image;
 
     const updateData = {
-      ...(name && { name }),
-      ...(code && { code }),
-      ...(email !== undefined && { email }),
-      ...(phone !== undefined && { phone }),
-      ...(address !== undefined && { address }),
-      ...(website !== undefined && { website }),
-      ...(desc !== undefined && { desc }),
-      ...(map !== undefined && { map }),
-      ...(category && { category }),
-      ...(status && { status }),
-      ...(facilities && { facilities: safeParseJSON(facilities) }),
-      ...(services && { services: safeParseJSON(services) }),
-      ...(courses && { courses: safeParseJSON(courses) }),
-      ...(country && { country }),
-      ...(visible !== undefined && { visible: typeof visible === 'string' ? JSON.parse(visible) : visible }),
-      updatedBy: updatedBy || 'admin'
+      name, code, email, phone, address, website, desc, map,
+      category, status, country, image,
+      visible: visible !== undefined ? JSON.parse(visible) : college.visible,
+      facilities: safeParseJSON(facilities),
+      services: safeParseJSON(services),
+      courses: safeParseJSON(courses)
     };
 
-    if (image) updateData.image = image;
-
-    const updated = await College.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate({
-      path: 'country',
-      match: { isDeleted: false },
-      select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-    }).populate({
-      path: 'courses',
-      match: { isDeleted: false },
-      select: '-__v -createdBy -updatedBy -isDeleted -createdAt -updatedAt'
-    });
-
-    if (!updated) {
-      return res.status(404).json({ error: 'College not found' });
-    }
-
+    const updated = await College.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updated);
   } catch (err) {
-    console.error('Update college error:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Soft delete college
-exports.softDeleteCollege = async (req, res) => {
-  try {
-    const deleted = await College.findByIdAndUpdate(
-      req.params.id,
-      { isDeleted: true, updatedBy: req.body.updatedBy || 'admin' },
-      { new: true }
-    );
-
-    if (!deleted) {
-      return res.status(404).json({ error: 'College not found' });
-    }
-
-    res.json({ message: 'College soft deleted successfully', data: deleted });
-  } catch (err) {
-    console.error('Soft delete college error:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Hard delete college
+// DELETE
 exports.deleteCollege = async (req, res) => {
   try {
-    const deleted = await College.findByIdAndDelete(req.params.id);
+    const college = await College.findById(req.params.id);
+    if (!college) return res.status(404).json({ error: 'College not found' });
 
-    if (!deleted) {
-      return res.status(404).json({ error: "College not found" });
+    if (college.image) {
+      const imagePath = path.join(__dirname, `../../public/college/${path.basename(college.image)}`);
+      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
 
-    res.json({ message: 'College permanently deleted', data: deleted });
+    await College.findByIdAndDelete(req.params.id);
+    res.json({ message: 'College permanently deleted' });
   } catch (err) {
-    console.error('Delete college error:', err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get college count
+// COUNT
 exports.getCollegeCount = async (req, res) => {
   try {
-    const count = await College.countDocuments({ isDeleted: false });
+    const count = await College.countDocuments();
     res.json({ count });
   } catch (err) {
-    console.error('Get college count error:', err);
     res.status(500).json({ error: err.message });
   }
 };

@@ -22,17 +22,13 @@ const BlogSchema = new Schema({
     type: String,
     default: null
   },
-  imagePublicId: {
-    type: String,
-    default: null // Store Cloudinary public_id for image deletion
-  },
   createdBy: {
     type: String,
-    default: 'admin'
+    default: 'User'
   },
   updatedBy: {
     type: String,
-    default: 'admin'
+    default: 'User'
   },
   isVisible: {
     type: Boolean,
@@ -43,7 +39,7 @@ const BlogSchema = new Schema({
     default: false
   }
 }, {
-  timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' }
+  timestamps: true
 });
 
 const Blog = mongoose.model('Blog', BlogSchema);

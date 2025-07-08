@@ -67,11 +67,11 @@ const collegeSchema = new mongoose.Schema({
     },
     createdBy: {
         type: String,
-        default: 'admin'
+        default: 'User'
     },
     updatedBy: {
         type: String,
-        default: 'admin'
+        default: 'User'
     }
 }, {
     timestamps: true
@@ -80,8 +80,6 @@ const collegeSchema = new mongoose.Schema({
 // Add indexes for better query performance
 collegeSchema.index({ code: 1 });
 collegeSchema.index({ country: 1 });
-collegeSchema.index({ isDeleted: 1 });
-collegeSchema.index({ visible: 1 });
 
 const College = mongoose.model('College', collegeSchema);
 module.exports = College;

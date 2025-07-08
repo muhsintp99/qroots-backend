@@ -37,6 +37,7 @@ app.use(rateLimit({
 }));
 
 app.use(`/public/defult`, express.static(path.join(__dirname, `public/defult`)));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/cloudinary', require('./app/routes/createCloudinaryUpload'));
 
 const sseClients = new Set();
@@ -68,7 +69,7 @@ app.set('sseClients', sseClients);
 
 // Default route
 app.get('/', (req, res) => {
-  res.json({ message: "Hello, Server Started" });
+  res.json({ message: "Hello, Server Started Q Roots International" });
 });
 
 // Routes

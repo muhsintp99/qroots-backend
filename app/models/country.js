@@ -53,11 +53,11 @@ const countrySchema = new mongoose.Schema({
   },
   createdBy: {
     type: String,
-    default: 'admin'
+    default: 'User'
   },
   updatedBy: {
     type: String,
-    default: 'admin'
+    default: 'User'
   }
 }, {
   timestamps: true
@@ -72,5 +72,4 @@ countrySchema.pre('save', function (next) {
   next();
 });
 
-const Country = mongoose.model('Country', countrySchema);
-module.exports = Country;
+module.exports = mongoose.model('Country', countrySchema);

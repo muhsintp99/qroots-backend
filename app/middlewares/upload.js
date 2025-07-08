@@ -27,13 +27,13 @@ function createUpload(folderName) {
     if (isValidMime && isValidExt) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed (jpeg, jpg, png, gif)!'), false);
+      cb(new Error('Only image files are allowed!'), false);
     }
   };
 
   return multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter
   }).single('image');
 }
