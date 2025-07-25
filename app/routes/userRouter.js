@@ -47,6 +47,7 @@ router.get('/:id', requireSignIn, isAdmin, userController.getById);
 
 router.delete('/:id', requireSignIn, isAdmin, userController.delete);
 router.put('/block/:id', requireSignIn, isAdmin, userController.block);
+router.put('/unblock/:id', requireSignIn, isAdmin, userController.unblock);
 router.put('/reactivate/:id', requireSignIn, isAdmin, userController.reactivate);
 
 module.exports = router;

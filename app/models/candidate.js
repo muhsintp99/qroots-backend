@@ -15,7 +15,7 @@ const CandidateSchema = new Schema({
   lastName: { type: String, trim: true },
   gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' },
   dob: { type: String, trim: true },
-  image: { type: String, default: '/public/default/user.png' },
+  image: { type: String, default: '/public/defult/user.png' },
 
   // Identity Card
   identityType: { type: String, enum: ['aadhaar', 'passport', 'voterId', 'drivingLicense'], default: 'aadhaar' },
@@ -25,6 +25,7 @@ const CandidateSchema = new Schema({
   // Address Details
   addressLine1: { type: String, default: null },
   addressLine2: { type: String, default: null },
+  landmark: { type: String, default: null },
   city: { type: String, default: null },
   district: { type: String, default: null },
   state: { type: String, default: null },
@@ -57,6 +58,11 @@ const CandidateSchema = new Schema({
   couponCode: { type: mongoose.Schema.Types.ObjectId, ref: 'CouponCode', default: null },
 
   // System Use
+  userType: {
+    type: String,
+    enum: ['candidate'],
+    default: 'candidate'
+  },
   isDeleted: { type: Boolean, default: false },
   lastLogin: { type: Date, default: null },
   resetPasswordToken: { type: String, default: null },

@@ -8,7 +8,7 @@ const userController = {
   // Register User
   async register(req, res) {
     try {
-      const { fname, lname, email, mobile, password, userType } = req.body;
+      const { fname, lname, email, mobile, password, userType, status } = req.body;
 
       if (!email || !mobile || !password || !userType) {
         return res.status(400).json({ success: false, message: 'All required fields must be provided' });
@@ -32,7 +32,8 @@ const userController = {
         mobile,
         password: hashedPassword,
         userType,
-        image
+        image,
+        status: status || 'active'
       });
 
       await sendWelcomeEmail(email, `${fname} ${lname}`);
@@ -50,7 +51,8 @@ const userController = {
           mobile: user.mobile,
           fname: user.fname,
           lname: user.lname,
-          image: user.image
+          image: user.image,
+          status: user.status
         }
       });
     } catch (error) {
@@ -115,7 +117,9 @@ const userController = {
           userType: user.userType,
           fname: user.fname,
           lname: user.lname,
-          image: user.image
+          image: user.image,
+          mobile: user.mobile,
+          status: user.status
         }
       });
     } catch (error) {
@@ -298,10 +302,22 @@ const userController = {
   },
 
   // Get All Users
+  // async getAll(req, res) {
+  //   try {
+  //     const users = await User.find();
+  //     const counts = await User.countDocuments();
+  //     res.status(200).json({ success: true, counts, users });
+  //   } catch (error) {
+  //     console.error('Get all users error:', error);
+  //     res.status(500).json({ success: false, message: 'Error fetching users', error: error.message });
+  //   }
+  // },
+
+  // Get All Users
   async getAll(req, res) {
     try {
-      const users = await User.find();
-      const counts = await User.countDocuments();
+      const users = await User.find({ email: { $ne: 'muhsintp.develop@gmail.com' } });
+      const counts = await User.countDocuments({ email: { $ne: 'muhsintp.develop@gmail.com' } });
       res.status(200).json({ success: true, counts, users });
     } catch (error) {
       console.error('Get all users error:', error);
@@ -320,6 +336,22 @@ const userController = {
     } catch (error) {
       console.error('Get user by ID error:', error);
       res.status(500).json({ success: false, message: 'Error fetching user', error: error.message });
+    }
+  },
+
+  async unblock(req, res) {
+    try {
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { status: 'active', isDeleted: false },
+        { new: true }
+      );
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json({ user });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
   }
 };
